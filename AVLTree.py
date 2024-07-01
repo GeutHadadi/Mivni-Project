@@ -59,6 +59,14 @@ class AVLTree(object):
 	@returns: node corresponding to key
 	"""
 	def search(self, key):
+		p = self.root
+		while p is not None:
+			if p.key == key:
+				return p
+			if p.key < key:
+				p = p.right
+			else:
+				p = p.left
 		return None
 
 
@@ -67,12 +75,62 @@ class AVLTree(object):
 	@type key: int
 	@pre: key currently does not appear in the dictionary
 	@param key: key of item that is to be inserted to self
-	@type val: string
+	@type val: string 
 	@param val: the value of the item
 	@rtype: int
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
+
+	def left_rotation(self, criminal):
+		new_root = criminal.right
+		new_root.parent = criminal.parent
+		criminal.parent = new_root
+		criminal.right = new_root.left
+		criminal.right.parent = criminal
+		new_root.left = criminal
+
+		criminal.height = max(criminal.left.height, criminal.right.height) + 1
+		new_root.height = max(new_root.left.height, new_root.right.height) + 1
+
+		return new_root
+
+
+	def right_rotation(self, criminal):
+		new_root = criminal.left
+		new_root.parent = criminal.parent
+		criminal.parent = new_root
+		criminal.left = new_root.right
+		criminal.left.parent = criminal
+		new_root.right = criminal
+
+		criminal.height = max(criminal.left.height, criminal.right.height)+1
+		new_root.height = max(new_root.left.height, new_root.right.height)+1
+
+		return new_root
+
+
+	def bst_insert(self, key, val):
+		cur = self.root
+		while True: # Reach final non leaf node
+			if key < cur.key and cur.left.key != "":
+				cur = cur.left
+			elif key > cur.key and cur.right.key != "":
+				cur = cur.right
+			else: # Key is assumed not to exist in tree thus only option is one of the children's keys is ""
+				break
+
+		if key > cur.key:
+			cur.right = AVLNode(key,val)
+		else:
+			cur.left = AVLNode(key,val)
+
+		return
+
+
 	def insert(self, key, val):
+		rotation = 0
+
+
 		return -1
 
 
