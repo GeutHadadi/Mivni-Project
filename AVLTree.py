@@ -121,15 +121,40 @@ class AVLTree(object):
 
 		if key > cur.key:
 			cur.right = AVLNode(key,val)
+			return cur.right
 		else:
 			cur.left = AVLNode(key,val)
+			return cur.left
 
-		return
+
+	@staticmethod
+	def change__height(self, cur):
+		parent = cur.parent
+		height_changed = True
+		while parent.key != "" and height_changed:
+			if cur == parent.left:
+				if parent.left.height > parent.right.height:
+					parent.height+=1
+				else:
+					height_changed = False
+			else: # came from the right
+				if parent.right.height > parent.left.height:
+					parent.height+=1
+				else:
+					height_changed = False
+
+
+	@staticmethod
+	def get_bf(node):
+		return node.left.height - node.right.height
 
 
 	def insert(self, key, val):
 		rotation = 0
-
+		cur = self.bst_insert(key, val)
+		while cur.key != "":
+			bf = self.get_bf(cur)
+		if abs(bf)<2 and
 
 		return -1
 
