@@ -146,42 +146,6 @@ class AVLTree(object):
 			else: # coming from prev's right child aka left right rotation
 				return 3
 		
-	def find_max(self, node):
-		while node.is_real_node()	:
-			node = node.max
-		
-		return node.parent
-
-	
-	def predecessor(self, prev):
-		if prev.left != None and prev.left.is_real_node():
-			return self.find_max(prev.left)
-		
-		cur = prev.parent
-		while cur.is_real_node() and prev == cur.left:
-			prev = cur
-			cur = cur.parent
-		
-		return cur
-	
-	
-	def find_min(self, node):
-		while node.is_real_node():
-			node = node.left
-		
-		return node.parent
-
-	
-	def succesor(self, prev):
-		if prev.right != None and prev.right.is_real_node():
-			return self.find_min(prev.right)
-		
-		cur = prev.parent
-		while cur.is_real_node() and prev == cur.right:
-			prev = cur
-			cur = cur.parent
-		
-		return cur
 
 	"""deletes node from the dictionary
 
@@ -191,8 +155,8 @@ class AVLTree(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def delete(self, node):
-		return -1
-
+		return -1	
+	
 
 	"""returns an array representing dictionary 
 
@@ -229,7 +193,6 @@ class AVLTree(object):
 	@rtype: int
 	@returns: the rank of node in self
 	"""
-
 	def rank(self, node):
 		count=(node.left.size+1)
 		prev= node
@@ -244,7 +207,6 @@ class AVLTree(object):
 			prev = cur
 			cur = cur.parent
 		return count
-
 
 
 	"""finds the i'th smallest item (according to keys) in the dictionary
@@ -264,7 +226,6 @@ class AVLTree(object):
 			return self.select(cur.left, i) # maybe in the left subtree
 		else: # i>rk - there are too few items that are <= i
 			return self.select(cur.right, small_or_eq-i) # maybe in the right subtree we can increse the number
-
 
 	"""finds the node with the largest value in a specified range of keys
 
@@ -292,7 +253,6 @@ class AVLTree(object):
 
 		return self.search(max_key)
 
-
 	"""returns the root of the tree representing the dictionary
 
 	@rtype: AVLNode
@@ -300,8 +260,41 @@ class AVLTree(object):
 	"""
 	def get_root(self):
 		return self.root
+	
+	def predecessor(self, prev):
+		if prev.left != None and prev.left.is_real_node():
+			return self.find_max(prev.left)
+		
+		cur = prev.parent
+		while cur.is_real_node() and prev == cur.left:
+			prev = cur
+			cur = cur.parent
+		
+		return cur
+	
+	def find_max(self, node):
+		while node.is_real_node()	:
+			node = node.max
+		
+		return node.parent
+	
+	def find_min(self, node):
+		while node.is_real_node():
+			node = node.left
+		
+		return node.parent
 
-
+	
+	def succesor(self, prev):
+		if prev.right != None and prev.right.is_real_node():
+			return self.find_min(prev.right)
+		
+		cur = prev.parent
+		while cur.is_real_node() and prev == cur.right:
+			prev = cur
+			cur = cur.parent
+		
+		return cur
 
 	def left_rotation(self, criminal):
 		new_root = criminal.right
@@ -394,52 +387,68 @@ class AVLTree(object):
 		return node.left.height - node.right.height
 
 
-	def printree(root):
-		if not root:
-			return ["#"]
+def printree(root):
+	if not root:
+		return ["#"]
 
-		root_key = str(root.key)
-		left, right = printree(root.left), printree(root.right)
+	root_key = str(root.key)
+	left, right = printree(root.left), printree(root.right)
 
-		lwid = len(left[-1])
-		rwid = len(right[-1])
-		rootwid = len(root_key)
+	lwid = len(left[-1])
+	rwid = len(right[-1])
+	rootwid = len(root_key)
 
-		result = [(lwid + 1) * " " + root_key + (rwid + 1) * " "]
+	result = [(lwid + 1) * " " + root_key + (rwid + 1) * " "]
 
-		ls = len(left[0].rstrip())
-		rs = len(right[0]) - len(right[0].lstrip())
-		result.append(ls * " " + (lwid - ls) * "_" + "/" + rootwid * " " + "\\" + rs * "_" + (rwid - rs) * " ")
+	ls = len(left[0].rstrip())
+	rs = len(right[0]) - len(right[0].lstrip())
+	result.append(ls * " " + (lwid - ls) * "_" + "/" + rootwid * " " + "\\" + rs * "_" + (rwid - rs) * " ")
 
-		for i in range(max(len(left), len(right))):
-			row = ""
-			if i < len(left):
-				row += left[i]
-			else:
-				row += lwid * " "
-				
-			row += (rootwid + 2) * " "
+	for i in range(max(len(left), len(right))):
+		row = ""
+		if i < len(left):
+			row += left[i]
+		else:
+			row += lwid * " "
+			
+		row += (rootwid + 2) * " "
 
-			if i < len(right):
-				row += right[i]
-			else:
-				row += rwid * " "
+		if i < len(right):
+			row += right[i]
+		else:
+			row += rwid * " "
 
-			result.append(row)
+		result.append(row)
 
-			return result
+		return result
 
-		return '\n'.join(printree(self.root))
+	return '\n'.join(printree(self.root))
 
-
+	
 
 if __name__ == "__main__":
-	avltree = AVLTree()
-	#printree(avltree.root)
-	avltree.insert(5, "Node 1")
-	avltree.insert(7, "Node 2")
-	avltree.insert(4, "Node 3")
-	avltree.insert(8, "Node 4")
-	avltree.insert(10, "Node 5")
-	print()
-	print(avltree.avl_to_array())
+    avltree = AVLTree()
+    # printree(avltree.root)
+    avltree.insert(5, "Node 1")
+    #print(avltree.size())
+    avltree.insert(7, "Node 2")
+    #print(avltree.size())
+    avltree.insert(4, "Node 3")
+    #print(avltree.size())
+    avltree.insert(8, "Node 4")
+    #print(avltree.size())
+    avltree.insert(10, "Node 5")
+    #print(avltree.size())
+    print(avltree.avl_to_array())
+    #print(avltree.size())
+    # print()
+    # print("avl tree search 8 output:")
+    # node = avltree.search(8)
+
+    # print(avltree.rank(node))
+    # print(f"Root: {avltree.root}, size: {avltree.root.size}")
+    # print(f"Root left: {avltree.root.left} size: {avltree.root.left.size}")
+    # print(f"Root right: {avltree.root.right} size: {avltree.root.right.size}")
+    # print(f"Root right.left: {avltree.root.right.left} size: {avltree.root.right.left.size}")
+    # print(f"Root right.right: {avltree.root.right.right} size: {avltree.root.right.right.size}")
+    
