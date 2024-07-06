@@ -94,7 +94,7 @@ class AVLTree(object):
 		while cur != None and cur.is_real_node():
 			bf = self.get_bf(cur)
 			if abs(bf)<2 and cur.height == (max(cur.left.height, cur.right.height)+1):
-				return rotation
+				break
 			elif abs(bf) < 2 and cur.height != (max(cur.left.height, cur.right.height)+1):
 				cur.height = (max(cur.left.height, cur.right.height)+1)
 				cur.size += 1
@@ -106,14 +106,11 @@ class AVLTree(object):
 				last = cur
 				if rot == 1: # rotate left
 					cur = self.left_rotation(cur)
-
 				elif rot == 2: # rotate right
 					cur = self.right_rotation(cur)
-
 				elif rot == 3: # rotate LR
 					cur.left = self.left_rotation(prev)
 					cur = self.right_rotation(cur)
-
 				else: # rotate RL
 					cur.right = self.right_rotation(prev)
 
@@ -128,8 +125,11 @@ class AVLTree(object):
 					elif cur.parent.right == last:
 						cur.parent.right = cur
 
-				return rotation
-		return -1
+				break
+		
+		self.root.size = self.root.left.size + self.root.right.size + 1
+		self.root.height = max(self.root.left.height, self.root.right.height) + 1
+		return rotation
 
 
 	def determine_rotation(self, child, criminal_bf):
@@ -229,17 +229,23 @@ class AVLTree(object):
 	@rtype: int
 	@returns: the rank of node in self
 	"""
+
 	def rank(self, node):
 		count=(node.left.size+1)
-		prev = node
-		cur = prev.parent
-		
-		while cur.parent != None and cur.parent.is_real_node():
-			if(prev == cur.right):
-				count+=(cur.left.size+1)	
+		prev= node
+		cur = node.parent
+		if node.parent == None:
+			return count
+
+
+		while cur != None and cur.is_real_node():
+			if (prev == cur.right):
+				count += (cur.left.size+1)	
 			prev = cur
 			cur = cur.parent
-		return cur
+		return count
+
+
 
 	"""finds the i'th smallest item (according to keys) in the dictionary
 
