@@ -32,9 +32,16 @@ class AVLNode(object):
 	@returns: False if self is a virtual node, True otherwise.
 	"""
 	def is_real_node(self):
-		return False
+		return self.key != None
 
+	def fill_virtual_children(self):
+		self.left = AVLNode(None, "")
+		self.right = AVLNode(None, "")
+		self.left.parent = self
+		self.right.parent = self
 
+	def __repr__(self):
+		return f"AVLNode({self.key}, {self.value})"
 
 """
 A class implementing an AVL tree.
@@ -48,7 +55,6 @@ class AVLTree(object):
 	"""
 	def __init__(self):
 		self.root = None
-		self.size = 0
 
 
 	"""searches for a node in the dictionary corresponding to the key
@@ -67,7 +73,7 @@ class AVLTree(object):
 				p = p.right
 			else:
 				p = p.left
-		return None
+		return p
 
 
 	"""inserts a new node into the dictionary with corresponding key and value
@@ -81,83 +87,101 @@ class AVLTree(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 
-	def left_rotation(self, criminal):
-		new_root = criminal.right
-		new_root.parent = criminal.parent
-		criminal.parent = new_root
-		criminal.right = new_root.left
-		criminal.right.parent = criminal
-		new_root.left = criminal
-
-		criminal.height = max(criminal.left.height, criminal.right.height) + 1
-		new_root.height = max(new_root.left.height, new_root.right.height) + 1
-
-		return new_root
-
-
-	def right_rotation(self, criminal):
-		new_root = criminal.left
-		new_root.parent = criminal.parent
-		criminal.parent = new_root
-		criminal.left = new_root.right
-		criminal.left.parent = criminal
-		new_root.right = criminal
-
-		criminal.height = max(criminal.left.height, criminal.right.height)+1
-		new_root.height = max(new_root.left.height, new_root.right.height)+1
-
-		return new_root
-
-
-	def bst_insert(self, key, val):
-		cur = self.root
-		while True: # Reach final non leaf node
-			if key < cur.key and cur.left.key != "":
-				cur = cur.left
-			elif key > cur.key and cur.right.key != "":
-				cur = cur.right
-			else: # Key is assumed not to exist in tree thus only option is one of the children's keys is ""
-				break
-
-		if key > cur.key:
-			cur.right = AVLNode(key,val)
-			return cur.right
-		else:
-			cur.left = AVLNode(key,val)
-			return cur.left
-
-
-	@staticmethod
-	def change__height(self, cur):
-		parent = cur.parent
-		height_changed = True
-		while parent.key != "" and height_changed:
-			if cur == parent.left:
-				if parent.left.height > parent.right.height:
-					parent.height+=1
-				else:
-					height_changed = False
-			else: # came from the right
-				if parent.right.height > parent.left.height:
-					parent.height+=1
-				else:
-					height_changed = False
-
-
-	@staticmethod
-	def get_bf(node):
-		return node.left.height - node.right.height
-
-
 	def insert(self, key, val):
 		rotation = 0
 		cur = self.bst_insert(key, val)
-		while cur.key != "":
+		prev = cur
+		while cur != None and cur.is_real_node():
 			bf = self.get_bf(cur)
-		if abs(bf)<2 and
+			if abs(bf)<2 and cur.height == (max(cur.left.height, cur.right.height)+1):
+				return rotation
+			elif abs(bf) < 2 and cur.height != (max(cur.left.height, cur.right.height)+1):
+				cur.height = (max(cur.left.height, cur.right.height)+1)
+				cur.size += 1
+				prev = cur
+				cur = cur.parent
+			else:
+				rotation += 1
+				rot = self.determine_rotation(prev, bf)
+				last = cur
+				if rot == 1: # rotate left
+					cur = self.left_rotation(cur)
 
+				elif rot == 2: # rotate right
+					cur = self.right_rotation(cur)
+
+				elif rot == 3: # rotate LR
+					cur.left = self.left_rotation(prev)
+					cur = self.right_rotation(cur)
+
+				else: # rotate RL
+					cur.right = self.right_rotation(prev)
+
+					cur = self.left_rotation(cur)
+				
+				if last == self.root:
+					self.root = cur
+
+				if cur.parent != None:
+					if cur.parent.left == last:
+						cur.parent.left = cur
+					elif cur.parent.right == last:
+						cur.parent.right = cur
+
+				return rotation
 		return -1
 
+
+	def determine_rotation(self, child, criminal_bf):
+		prev_bf = self.get_bf(child)
+		if criminal_bf == -2: # Coming from criminals's right child
+			if prev_bf == -1: # Coming from prev's right child aka need left rotation
+				return 1 
+			else: # Coming from prev's left child aka right left rotation
+				return 4
+		
+		else: # bf is 2, coming from criminals's left child 
+			if prev_bf == 1: # Coming from prev's left child aka perform right rotation
+				return 2
+			else: # coming from prev's right child aka left right rotation
+				return 3
+		
+	def find_max(self, node):
+		while node.is_real_node()	:
+			node = node.max
+		
+		return node.parent
+
+	
+	def predecessor(self, prev):
+		if prev.left != None and prev.left.is_real_node():
+			return self.find_max(prev.left)
+		
+		cur = prev.parent
+		while cur.is_real_node() and prev == cur.left:
+			prev = cur
+			cur = cur.parent
+		
+		return cur
+	
+	
+	def find_min(self, node):
+		while node.is_real_node():
+			node = node.left
+		
+		return node.parent
+
+	
+	def succesor(self, prev):
+		if prev.right != None and prev.right.is_real_node():
+			return self.find_min(prev.right)
+		
+		cur = prev.parent
+		while cur.is_real_node() and prev == cur.right:
+			prev = cur
+			cur = cur.parent
+		
+		return cur
 
 	"""deletes node from the dictionary
 
@@ -175,8 +199,17 @@ class AVLTree(object):
 	@rtype: list
 	@returns: a sorted list according to key of touples (key, value) representing the data structure
 	"""
+	def avl_to_array_rec(self, cur, arr):
+		if(cur.is_real_node()):
+			self.avl_to_array_rec(cur.left, arr)
+			print(cur)
+			arr.append(cur)
+			self.avl_to_array_rec(cur.right, arr)
+		
 	def avl_to_array(self):
-		return None
+		arr = []
+		self.avl_to_array_rec(self.root, arr)
+		return arr
 
 
 	"""returns the number of items in dictionary 
@@ -185,7 +218,7 @@ class AVLTree(object):
 	@returns: the number of items in dictionary 
 	"""
 	def size(self):
-		return -1	
+		return self.root.size
 
 
 	"""compute the rank of node in the dictionary
@@ -197,8 +230,16 @@ class AVLTree(object):
 	@returns: the rank of node in self
 	"""
 	def rank(self, node):
-		return -1
-
+		count=(node.left.size+1)
+		prev = node
+		cur = prev.parent
+		
+		while cur.parent != None and cur.parent.is_real_node():
+			if(prev == cur.right):
+				count+=(cur.left.size+1)	
+			prev = cur
+			cur = cur.parent
+		return cur
 
 	"""finds the i'th smallest item (according to keys) in the dictionary
 
@@ -209,7 +250,14 @@ class AVLTree(object):
 	@returns: the node of rank i in self
 	"""
 	def select(self, i):
-		return None
+		cur = self.root
+		small_or_eq = x.left.size+1
+		if i==small_or_eq: # than there are small_or_eq items <= i as needed
+			return cur
+		elif i<small_or_eq: # than there are still some items that are > i
+			return self.select(cur.left, i) # maybe in the left subtree
+		else: # i>rk - there are too few items that are <= i
+			return self.select(cur.right, small_or_eq-i) # maybe in the right subtree we can increse the number
 
 
 	"""finds the node with the largest value in a specified range of keys
@@ -223,7 +271,20 @@ class AVLTree(object):
 	@returns: the node with maximal (lexicographically) value having a<=key<=b, or None if no such keys exist
 	"""
 	def max_range(self, a, b):
-		return None
+		max_lexi = ""
+		max_key = 0
+		arr = self.avl_to_array()
+		i=0
+		while arr[i][0]<a:
+			i+=1
+
+		while arr[i][0]<=b:
+			if arr[i][1] > max_lexi:
+				max_lexi = arr[i][1]
+				max_index = arr[i][0]
+			i+=1
+
+		return self.search(max_key)
 
 
 	"""returns the root of the tree representing the dictionary
@@ -232,4 +293,147 @@ class AVLTree(object):
 	@returns: the root, None if the dictionary is empty
 	"""
 	def get_root(self):
-		return None
+		return self.root
+
+
+
+	def left_rotation(self, criminal):
+		new_root = criminal.right
+		new_root.parent = criminal.parent
+		criminal.parent = new_root
+		criminal.right = new_root.left
+		criminal.right.parent = criminal
+		new_root.left = criminal
+
+		criminal.height = max(criminal.left.height, criminal.right.height) + 1
+		new_root.height = max(new_root.left.height, new_root.right.height) + 1
+
+		criminal.size = criminal.left.size + criminal.right.size + 1
+		new_root.size = new_root.left.size + new_root.right.size + 1
+		
+		return new_root
+
+
+	def right_rotation(self, criminal):
+		new_root = criminal.left
+		new_root.parent = criminal.parent
+		criminal.parent = new_root
+		criminal.left = new_root.right
+		criminal.left.parent = criminal
+		new_root.right = criminal
+
+		criminal.height = max(criminal.left.height, criminal.right.height)+1
+		new_root.height = max(new_root.left.height, new_root.right.height)+1
+		
+		criminal.size = criminal.left.size + criminal.right.size + 1
+		new_root.size = new_root.left.size + new_root.right.size + 1
+
+		return new_root
+
+
+	def bst_insert(self, key, val):
+		if self.root == None:
+			self.root = AVLNode(key, val)
+			self.root.fill_virtual_children()
+
+			return self.root
+
+		cur = self.root
+		parent = cur
+		while cur.is_real_node(): # Reach final non leaf node
+			parent = cur
+			if cur.left != None and cur.left.is_real_node() and key < cur.key:
+				cur = cur.left
+			elif cur.right != None and cur.right.is_real_node and key > cur.key:
+				cur = cur.right
+			else: # Key is assumed not to exist in tree thus only option is one of the children's keys is ""
+				break
+		
+		cur = parent
+		if key > cur.key:
+			cur.right = AVLNode(key,val)
+			cur.right.parent = cur
+			cur.right.fill_virtual_children()
+			return cur.right
+		else:
+			cur.left = AVLNode(key,val)
+			cur.left.parent = cur
+			cur.left.fill_virtual_children()
+			return cur.left
+
+
+	@staticmethod
+	def change__height(self, cur):
+		parent = cur.parent
+		height_changed = True
+		while parent.key != "" and height_changed:
+			"""
+			Three options before insertion for height changes:
+			1) Left and right children have same height, thus if coming from left child it must be that
+			"""
+			if cur == parent.left: 
+				if parent.left.height > parent.right.height:
+					parent.height+=1
+				else:
+					height_changed = False
+			else: # came from the right
+				if parent.right.height > parent.left.height:
+					parent.height+=1
+				else:
+					height_changed = False
+
+
+	@staticmethod
+	def get_bf(node):
+		return node.left.height - node.right.height
+
+
+	def printree(root):
+		if not root:
+			return ["#"]
+
+		root_key = str(root.key)
+		left, right = printree(root.left), printree(root.right)
+
+		lwid = len(left[-1])
+		rwid = len(right[-1])
+		rootwid = len(root_key)
+
+		result = [(lwid + 1) * " " + root_key + (rwid + 1) * " "]
+
+		ls = len(left[0].rstrip())
+		rs = len(right[0]) - len(right[0].lstrip())
+		result.append(ls * " " + (lwid - ls) * "_" + "/" + rootwid * " " + "\\" + rs * "_" + (rwid - rs) * " ")
+
+		for i in range(max(len(left), len(right))):
+			row = ""
+			if i < len(left):
+				row += left[i]
+			else:
+				row += lwid * " "
+				
+			row += (rootwid + 2) * " "
+
+			if i < len(right):
+				row += right[i]
+			else:
+				row += rwid * " "
+
+			result.append(row)
+
+			return result
+
+		return '\n'.join(printree(self.root))
+
+
+
+if __name__ == "__main__":
+	avltree = AVLTree()
+	#printree(avltree.root)
+	avltree.insert(5, "Node 1")
+	avltree.insert(7, "Node 2")
+	avltree.insert(4, "Node 3")
+	avltree.insert(8, "Node 4")
+	avltree.insert(10, "Node 5")
+	print()
+	print(avltree.avl_to_array())
