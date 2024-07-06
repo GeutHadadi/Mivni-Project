@@ -308,7 +308,7 @@ class AVLTree(object):
 		criminal.height = max(criminal.left.height, criminal.right.height) + 1
 		new_root.height = max(new_root.left.height, new_root.right.height) + 1
 
-		criminal.size = criminal.left.size + criminal.right.size + 1
+		criminal.size = criminal.left.size + criminal.right.size + 1 # Could possibly maintain size using method in lecture 4a slide 41 for marginal improvement.
 		new_root.size = new_root.left.size + new_root.right.size + 1
 		
 		return new_root
