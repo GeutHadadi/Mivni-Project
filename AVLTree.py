@@ -218,15 +218,16 @@ class AVLTree(object):
 	@returns: the node of rank i in self
 	"""
 	def select(self, i):
-		cur = self.root
-		small_or_eq = x.left.size+1
+		return self.select_rec(self.root, i)
+	
+	def select_rec(self, cur, i):
+		small_or_eq = cur.left.size+1
 		if i==small_or_eq: # than there are small_or_eq items <= i as needed
 			return cur
 		elif i<small_or_eq: # than there are still some items that are > i
-			return self.select(cur.left, i) # maybe in the left subtree
+			return self.select_rec(cur.left, i) # maybe in the left subtree
 		else: # i>rk - there are too few items that are <= i
-			return self.select(cur.right, small_or_eq-i) # maybe in the right subtree we can increse the number
-
+			return self.select_rec(cur.right, i-small_or_eq) # maybe in the right subtree we can increse the number
 	"""finds the node with the largest value in a specified range of keys
 
 	@type a: int
