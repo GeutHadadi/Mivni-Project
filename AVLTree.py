@@ -39,7 +39,17 @@ class AVLNode(object):
 		self.right = AVLNode(None, "")
 		self.left.parent = self
 		self.right.parent = self
-
+		return None
+	
+	def create_virtual_child(self, dir):
+		if dir == 0:
+			self.left = AVLNode(None, "")
+			self.left.parent = self
+		elif dir == 1:
+			self.right = AVLNode(None, "")
+			self.right.parent = self
+		return None
+		
 	def __repr__(self):
 		return f"AVLNode({self.key}, {self.value})"
 
@@ -154,8 +164,50 @@ class AVLTree(object):
 	@rtype: int
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
-	def delete(self, node):
-		return -1	
+    def delete_bst(self, node):
+		# Given node is a real node in a tree(precondition) no need to check if node/his siblings are not None as they have to be virtual children as their parent is a real node
+        rebal = 0
+
+        parent = node.parent
+		# Case 1, node to be deleted is a leaf, solution: simply delete node.
+        if not node.left.key.is_real_node() and not node.right.key.is_real_node(): # Both of node's childen are virtual nodes, aka node is a leaf
+            node.parent = None 
+            if parent.right == node: 
+                parent.create_virtual_child(1)
+            elif parent.left == node:
+                parent.create_virtual_child(0)
+
+            return 0
+
+        if node.left.key.is_real_node() and not node.right.key.is_real_node(): # if it only has a right child
+            if parent.right == node: # if node is a right child
+                parent.right = node.left # stick its left child as parent's right child
+            else: # if p is a left child
+                parent.left = node.left # stick its left child as parent's left child
+            
+        elif not node.left.key.is_real_node() and node.right.key.is_real_node(): # if it only has a left child
+            if parent.right == node: # if p is a right child
+                parent.right = node.right # stick its right child as parent's right child
+            else: # if p is a left child
+                parent.left = node.right # stick its right child as parent's left child
+		
+		else: # node has 2 children
+			suc = self.successor(node)
+			if suc != node.right: # If succesor is the minimum node in his right childs left subtree
+				suc.parent.left = suc.right # Replace succesor with his right child, if right child doesnt exist then it must be virtual node and still works.
+				suc.right.parent = suc.parent # Make succesor's right child point to suc's parent
+				suc.right = node.right # Replaces node indirectly so nodes right children must be his right children
+				suc.right.parent = suc # After having succesor point to node's right child, have child point to succesor 
+			suc.parent = parent # Succesor replaces node so his new parent is nodes parent
+			suc.left = node.left # Regardless of if node is directly nodes right child or not his left children(which he previously had none as successor is the minimum child) must be nodes left children
+			                          					                                                                                                                                                                                                          ''
+			if parent.right == node:
+				parent.right = suc
+			else:
+				parent.left = suc
+		
+		del node
+        return rebal	
 	
 
 	"""returns an array representing dictionary 
