@@ -164,11 +164,16 @@ class AVLTree(object):
 	@rtype: int
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
+
+	def delete(self, node):
+		parent_of_deleted = self.delete_bst(node)
+		
+
     def delete_bst(self, node):
 		# Given node is a real node in a tree(precondition) no need to check if node/his siblings are not None as they have to be virtual children as their parent is a real node
-        rebal = 0
 
         parent = node.parent
+		parent_physically_deleted = parent
 		# Case 1, node to be deleted is a leaf, solution: simply delete node.
         if not node.left.key.is_real_node() and not node.right.key.is_real_node(): # Both of node's childen are virtual nodes, aka node is a leaf
             node.parent = None 
@@ -193,6 +198,7 @@ class AVLTree(object):
 		
 		else: # node has 2 children
 			suc = self.successor(node)
+			parent_physically_deleted = suc.parent
 			if suc != node.right: # If succesor is the minimum node in his right childs left subtree
 				suc.parent.left = suc.right # Replace succesor with his right child, if right child doesnt exist then it must be virtual node and still works.
 				suc.right.parent = suc.parent # Make succesor's right child point to suc's parent
@@ -207,7 +213,7 @@ class AVLTree(object):
 				parent.left = suc
 		
 		del node
-        return rebal	
+        return parent_physically_deleted
 	
 
 	"""returns an array representing dictionary 
