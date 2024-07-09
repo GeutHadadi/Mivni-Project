@@ -483,6 +483,62 @@ def printree(root):
 
 	return '\n'.join(printree(self.root))
 
+
+def insert_from_max(self, key, val): # finger tree insert, returns size-rank which is number of changes (see question)
+	#assumes tree has a max field
+    p = self.max
+
+    if key > p.key:
+        p.right = AVLNode(key, val)
+        p.right.parent = p
+        p.right.fill_virtual_children()
+        self.max = p.right
+        return 0
+    
+    while p.is_real_node() and key < p.key:
+        p = p.parent
+    
+    node = p.bst_insert(key, val)
+    self.max = node
+
+    while node != None and node.is_real_node():
+        bf = self.get_bf(node)
+        if abs(bf) < 2 and node.height == (max(node.left.height, node.right.height) + 1):
+            break
+        elif abs(bf) < 2 and node.height != (max(node.left.height, node.right.height) + 1):
+            node.height = (max(node.left.height, node.right.height) + 1)
+            node.size += 1
+            prev = node
+            node = node.parent
+        else:
+            rot = self.determine_rotation(prev, bf)
+            last = node
+            if rot == 1:  # rotate left
+                node = self.left_rotation(node)
+            elif rot == 2:  # rotate right
+                node = self.right_rotation(node)
+            elif rot == 3:  # rotate LR
+                node.left = self.left_rotation(prev)
+                node = self.right_rotation(node)
+            else:  # rotate RL
+                node.right = self.right_rotation(prev)
+
+                node = self.left_rotation(node)
+
+            if last == self.root:
+                self.root = node
+
+            if node.parent != None:
+                if node.parent.left == last:
+                    node.parent.left = node
+                elif node.parent.right == last:
+                    node.parent.right = node
+
+            break
+    self.root.size = self.root.left.size + self.root.right.size + 1
+    self.root.height = max(self.root.left.height, self.root.right.height) + 1
+    return self.size-self.rank(node)
+
 	
 
 if __name__ == "__main__":
