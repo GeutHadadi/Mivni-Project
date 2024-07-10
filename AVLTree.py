@@ -481,60 +481,106 @@ class AVLTree(object):
 	def get_bf(node):
 		return node.left.height - node.right.height
 
-	def insert_from_max(self, key, val): # finger tree insert, returns size-rank which is number of changes (see question)
-		#assumes tree has a max field
-		p = self.max
-
-		if key > p.key:
-			p.right = AVLNode(key, val)
-			p.right.parent = p
-			p.right.fill_virtual_children()
-			self.max = p.right
-			return 0
-		
-		while p.is_real_node() and key < p.key:
-			p = p.parent
-		
-		node = p.bst_insert(key, val)
-		self.max = node
-
-		while node != None and node.is_real_node():
-			bf = self.get_bf(node)
-			if abs(bf) < 2 and node.height == (max(node.left.height, node.right.height) + 1):
-				break
-			elif abs(bf) < 2 and node.height != (max(node.left.height, node.right.height) + 1):
-				node.height = (max(node.left.height, node.right.height) + 1)
-				node.size += 1
-				prev = node
-				node = node.parent
-			else:
-				rot = self.determine_rotation(prev, bf)
-				last = node
-				if rot == 1:  # rotate left
-					node = self.left_rotation(node)
-				elif rot == 2:  # rotate right
-					node = self.right_rotation(node)
-				elif rot == 3:  # rotate LR
-					node.left = self.left_rotation(prev)
-					node = self.right_rotation(node)
-				else:  # rotate RL
-					node.right = self.right_rotation(prev)
-
-					node = self.left_rotation(node)
-
-				if last == self.root:
-					self.root = node
-
-				if node.parent != None:
-					if node.parent.left == last:
-						node.parent.left = node
-					elif node.parent.right == last:
-						node.parent.right = node
-
-				break
-		self.root.size = self.root.left.size + self.root.right.size + 1
-		self.root.height = max(self.root.left.height, self.root.right.height) + 1
-		return self.size-self.rank(node)
+	def bst_insert_count(self, key, val):
+	    count = 0
+	
+	    if self.root == None:
+	        self.root = AVLNode(key, val)
+	        self.root.fill_virtual_children()
+	
+	        return self.root, count
+	
+	    cur = self.root
+	    parent = cur
+	    while cur.is_real_node():  # Reach final non leaf node
+	        parent = cur
+	        if cur.left != None and cur.left.is_real_node() and key < cur.key:
+	            cur = cur.left
+	            count+=1
+	        elif cur.right != None and cur.right.is_real_node and key > cur.key:
+	            cur = cur.right
+	            count+=1
+	        else:  # Key is assumed not to exist in tree thus only option is one of the children's keys is ""
+	            break
+	
+	    cur = parent # goes up to parent presumably?
+	    count+=1
+	    if key > cur.key:
+	        cur.right = AVLNode(key, val)
+	        cur.right.parent = cur
+	        cur.right.fill_virtual_children()
+	        return cur.right
+	    else:
+	        cur.left = AVLNode(key, val)
+	        cur.left.parent = cur
+	        cur.left.fill_virtual_children()
+	        return cur.left
+	
+	
+	def insert_from_max(self, key, val):
+	    count = 0
+	    rotation = 0
+	    p = self.max
+	
+	    if key > p.key:
+	        p.right = AVLNode(key, val)
+	        p.right.parent = p
+	        p.right.fill_virtual_children()
+	        self.max = p.right
+	        return (count, rotation, 0)
+	
+	    while p.is_real_node() and key < p.key:
+	        p = p.parent
+	        count+=1
+	
+	    p = p.right
+	    count+=1
+	    node, bst_count = p.bst_insert_count(key, val)
+	    count+=bst_count
+	
+	    prev = node
+	    while node != None and node.is_real_node():
+	        bf = self.get_bf(node)
+	        if abs(bf) < 2 and node.height == (max(node.left.height, node.right.height) + 1):
+	            break
+	        elif abs(bf) < 2 and node.height != (max(node.left.height, node.right.height) + 1):
+	            node.height = (max(node.left.height, node.right.height) + 1)
+	            node.size += 1
+	            prev = node
+	            node = node.parent
+	        else:
+	            rotation += 1
+	            rot = self.determine_rotation(prev, bf)
+	            last = node #?
+	            if rot == 1:  # rotate left
+	                node = self.left_rotation(node)
+	            elif rot == 2:  # rotate right
+	                node = self.right_rotation(node)
+	            elif rot == 3:  # rotate LR
+	                rotation += 1
+	                node.left = self.left_rotation(prev)
+	                node = self.right_rotation(node)
+	            else:  # rotate RL
+	                rotation +=1
+	                node.right = self.right_rotation(prev)
+	                node = self.left_rotation(node)
+	
+	            if last == self.root: #?
+	                self.root = node #?
+	
+	            if node.parent != None:
+	                if node.parent.left == last:
+	                    node.parent.left = node
+	                elif node.parent.right == last:
+	                    node.parent.right = node
+	
+	            break
+	
+	    self.root.size = self.root.left.size + self.root.right.size + 1
+	    self.root.height = max(self.root.left.height, self.root.right.height) + 1
+	    self.max = node
+	
+	    return count, rotation, self.size-self.rank(node)
 
 
 
