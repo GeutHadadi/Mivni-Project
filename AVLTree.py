@@ -67,6 +67,45 @@ class AVLTree(object):
 		self.root = None
 
 
+	def __repr__(self):  # you don't need to understand the implementation of this method
+		def printree(root):
+			if not root.is_real_node():
+				return ["#"]
+
+			root_key = str(root.key)
+			left, right = printree(root.left), printree(root.right)
+
+			lwid = len(left[-1])
+			rwid = len(right[-1])
+			rootwid = len(root_key)
+
+			result = [(lwid + 1) * " " + root_key + (rwid + 1) * " "]
+
+			ls = len(left[0].rstrip())
+			rs = len(right[0]) - len(right[0].lstrip())
+			result.append(ls * " " + (lwid - ls) * "_" + "/" + rootwid * " " + "\\" + rs * "_" + (rwid - rs) * " ")
+
+			for i in range(max(len(left), len(right))):
+				row = ""
+				if i < len(left):
+					row += left[i]
+				else:
+					row += lwid * " "
+					
+				row += (rootwid + 2) * " "
+
+				if i < len(right):
+					row += right[i]
+				else:
+					row += rwid * " "
+
+				result.append(row)
+
+			return result
+
+		return '\n'.join(printree(self.root))
+
+ 
 	"""searches for a node in the dictionary corresponding to the key
 
 	@type key: int
@@ -168,34 +207,32 @@ class AVLTree(object):
 	def delete(self, node):
 		parent_of_deleted = self.delete_bst(node)
 		
-
-    def delete_bst(self, node):
-		# Given node is a real node in a tree(precondition) no need to check if node/his siblings are not None as they have to be virtual children as their parent is a real node
-
-        parent = node.parent
+	def delete_bst(self, node):
+		# Given node is a real node in a tree(precondition) no need to check if node/his siblings are not None as they have to be virtual children as their parent is a real node\
+		parent = node.parent
 		parent_physically_deleted = parent
 		# Case 1, node to be deleted is a leaf, solution: simply delete node.
-        if not node.left.key.is_real_node() and not node.right.key.is_real_node(): # Both of node's childen are virtual nodes, aka node is a leaf
-            node.parent = None 
-            if parent.right == node: 
-                parent.create_virtual_child(1)
-            elif parent.left == node:
-                parent.create_virtual_child(0)
+		if not node.left.key.is_real_node() and not node.right.key.is_real_node(): # Both of node's childen are virtual nodes, aka node is a leaf
+			node.parent = None 
+			if parent.right == node: 
+				parent.create_virtual_child(1)
+			elif parent.left == node:
+				parent.create_virtual_child(0)
 
-            return 0
+			return 0
 
-        if node.left.key.is_real_node() and not node.right.key.is_real_node(): # if it only has a right child
-            if parent.right == node: # if node is a right child
-                parent.right = node.left # stick its left child as parent's right child
-            else: # if p is a left child
-                parent.left = node.left # stick its left child as parent's left child
+		if node.left.key.is_real_node() and not node.right.key.is_real_node(): # if it only has a right child
+			if parent.right == node: # if node is a right child
+				parent.right = node.left # stick its left child as parent's right child
+			else: # if p is a left child
+				parent.left = node.left # stick its left child as parent's left child
             
-        elif not node.left.key.is_real_node() and node.right.key.is_real_node(): # if it only has a left child
-            if parent.right == node: # if p is a right child
-                parent.right = node.right # stick its right child as parent's right child
-            else: # if p is a left child
-                parent.left = node.right # stick its right child as parent's left child
-		
+		elif not node.left.key.is_real_node() and node.right.key.is_real_node(): # if it only has a left child
+			if parent.right == node: # if p is a right child
+				parent.right = node.right # stick its right child as parent's right child
+			else: # if p is a left child
+				parent.left = node.right # stick its right child as parent's left child
+
 		else: # node has 2 children
 			suc = self.successor(node)
 			parent_physically_deleted = suc.parent
@@ -206,14 +243,13 @@ class AVLTree(object):
 				suc.right.parent = suc # After having succesor point to node's right child, have child point to succesor 
 			suc.parent = parent # Succesor replaces node so his new parent is nodes parent
 			suc.left = node.left # Regardless of if node is directly nodes right child or not his left children(which he previously had none as successor is the minimum child) must be nodes left children
-			                          					                                                                                                                                                                                                          ''
 			if parent.right == node:
 				parent.right = suc
 			else:
 				parent.left = suc
-		
+
 		del node
-        return parent_physically_deleted
+		return parent_physically_deleted
 	
 
 	"""returns an array representing dictionary 
@@ -445,101 +481,63 @@ class AVLTree(object):
 	def get_bf(node):
 		return node.left.height - node.right.height
 
+	def insert_from_max(self, key, val): # finger tree insert, returns size-rank which is number of changes (see question)
+		#assumes tree has a max field
+		p = self.max
 
-def printree(root):
-	if not root:
-		return ["#"]
+		if key > p.key:
+			p.right = AVLNode(key, val)
+			p.right.parent = p
+			p.right.fill_virtual_children()
+			self.max = p.right
+			return 0
+		
+		while p.is_real_node() and key < p.key:
+			p = p.parent
+		
+		node = p.bst_insert(key, val)
+		self.max = node
 
-	root_key = str(root.key)
-	left, right = printree(root.left), printree(root.right)
+		while node != None and node.is_real_node():
+			bf = self.get_bf(node)
+			if abs(bf) < 2 and node.height == (max(node.left.height, node.right.height) + 1):
+				break
+			elif abs(bf) < 2 and node.height != (max(node.left.height, node.right.height) + 1):
+				node.height = (max(node.left.height, node.right.height) + 1)
+				node.size += 1
+				prev = node
+				node = node.parent
+			else:
+				rot = self.determine_rotation(prev, bf)
+				last = node
+				if rot == 1:  # rotate left
+					node = self.left_rotation(node)
+				elif rot == 2:  # rotate right
+					node = self.right_rotation(node)
+				elif rot == 3:  # rotate LR
+					node.left = self.left_rotation(prev)
+					node = self.right_rotation(node)
+				else:  # rotate RL
+					node.right = self.right_rotation(prev)
 
-	lwid = len(left[-1])
-	rwid = len(right[-1])
-	rootwid = len(root_key)
+					node = self.left_rotation(node)
 
-	result = [(lwid + 1) * " " + root_key + (rwid + 1) * " "]
+				if last == self.root:
+					self.root = node
 
-	ls = len(left[0].rstrip())
-	rs = len(right[0]) - len(right[0].lstrip())
-	result.append(ls * " " + (lwid - ls) * "_" + "/" + rootwid * " " + "\\" + rs * "_" + (rwid - rs) * " ")
+				if node.parent != None:
+					if node.parent.left == last:
+						node.parent.left = node
+					elif node.parent.right == last:
+						node.parent.right = node
 
-	for i in range(max(len(left), len(right))):
-		row = ""
-		if i < len(left):
-			row += left[i]
-		else:
-			row += lwid * " "
-			
-		row += (rootwid + 2) * " "
-
-		if i < len(right):
-			row += right[i]
-		else:
-			row += rwid * " "
-
-		result.append(row)
-
-		return result
-
-	return '\n'.join(printree(self.root))
+				break
+		self.root.size = self.root.left.size + self.root.right.size + 1
+		self.root.height = max(self.root.left.height, self.root.right.height) + 1
+		return self.size-self.rank(node)
 
 
-def insert_from_max(self, key, val): # finger tree insert, returns size-rank which is number of changes (see question)
-	#assumes tree has a max field
-    p = self.max
 
-    if key > p.key:
-        p.right = AVLNode(key, val)
-        p.right.parent = p
-        p.right.fill_virtual_children()
-        self.max = p.right
-        return 0
-    
-    while p.is_real_node() and key < p.key:
-        p = p.parent
-    
-    node = p.bst_insert(key, val)
-    self.max = node
-
-    while node != None and node.is_real_node():
-        bf = self.get_bf(node)
-        if abs(bf) < 2 and node.height == (max(node.left.height, node.right.height) + 1):
-            break
-        elif abs(bf) < 2 and node.height != (max(node.left.height, node.right.height) + 1):
-            node.height = (max(node.left.height, node.right.height) + 1)
-            node.size += 1
-            prev = node
-            node = node.parent
-        else:
-            rot = self.determine_rotation(prev, bf)
-            last = node
-            if rot == 1:  # rotate left
-                node = self.left_rotation(node)
-            elif rot == 2:  # rotate right
-                node = self.right_rotation(node)
-            elif rot == 3:  # rotate LR
-                node.left = self.left_rotation(prev)
-                node = self.right_rotation(node)
-            else:  # rotate RL
-                node.right = self.right_rotation(prev)
-
-                node = self.left_rotation(node)
-
-            if last == self.root:
-                self.root = node
-
-            if node.parent != None:
-                if node.parent.left == last:
-                    node.parent.left = node
-                elif node.parent.right == last:
-                    node.parent.right = node
-
-            break
-    self.root.size = self.root.left.size + self.root.right.size + 1
-    self.root.height = max(self.root.left.height, self.root.right.height) + 1
-    return self.size-self.rank(node)
-
-	
 
 if __name__ == "__main__":
     avltree = AVLTree()
@@ -566,4 +564,3 @@ if __name__ == "__main__":
     # print(f"Root right: {avltree.root.right} size: {avltree.root.right.size}")
     # print(f"Root right.left: {avltree.root.right.left} size: {avltree.root.right.left.size}")
     # print(f"Root right.right: {avltree.root.right.right} size: {avltree.root.right.right.size}")
-    
