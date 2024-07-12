@@ -162,3 +162,5 @@ cython_debug/
 #.idea/
 
 tester.py
+AVLTree_noamelron_geuthadadi.pdf
+info.txt

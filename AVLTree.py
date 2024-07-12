@@ -50,6 +50,9 @@ class AVLNode(object):
             self.right.parent = self
         return None
 
+    def __str__(self): # Change to str
+        return f"AVLNode({self.key}, {self.value}, Height: {self.height}, Size: {self.size})"
+
     def __repr__(self):
         return f"AVLNode({self.key}, '{self.value}')"
 
@@ -66,6 +69,44 @@ class AVLTree(object):
     def __init__(self):
         self.root = None
 
+    def __repr__(self):  # you don't need to understand the implementation of this method
+        def printree(root):
+            if not root or not root.is_real_node():
+                return ["#"]
+
+            root_key = str(root.key)
+            left, right = printree(root.left), printree(root.right)
+
+            lwid = len(left[-1])
+            rwid = len(right[-1])
+            rootwid = len(root_key)
+
+            result = [(lwid + 1) * " " + root_key + (rwid + 1) * " "]
+
+            ls = len(left[0].rstrip())
+            rs = len(right[0]) - len(right[0].lstrip())
+            result.append(ls * " " + (lwid - ls) * "_" + "/" + rootwid * " " + "\\" + rs * "_" + (rwid - rs) * " ")
+
+            for i in range(max(len(left), len(right))):
+                row = ""
+                if i < len(left):
+                    row += left[i]
+                else:
+                    row += lwid * " "
+                    
+                row += (rootwid + 2) * " "
+
+                if i < len(right):
+                    row += right[i]
+                else:
+                    row += rwid * " "
+
+                result.append(row)
+
+            return result
+
+        return '\n'.join(printree(self.root))
+    
     """inserts a new node into the dictionary with corresponding key and value
 
     @type key: int
@@ -78,24 +119,29 @@ class AVLTree(object):
     """
     # Time complexity: O(logn), created using algorithm from class which we've confirmed to be this time complexity
     def insert(self, key, val):
-        rotation = 0
+        rebalances = 0
         cur = self.bst_insert(key, val)
         prev = cur
+        
         while cur != None and cur.is_real_node():
             bf = self.get_bf(cur)
 
             
             if abs(bf)<2 and cur.height == (max(cur.left.height, cur.right.height)+1):
                 cur.size += 1
+                prev = cur
                 cur = cur.parent
                 break
             elif abs(bf) < 2 and cur.height != (max(cur.left.height, cur.right.height)+1):
+                if prev != cur:
+                    rebalances += 1
+
                 cur.height = (max(cur.left.height, cur.right.height)+1)
                 cur.size += 1
                 prev = cur
                 cur = cur.parent
             else:
-                rotation += 1
+                rebalances += 1
                 rot = self.determine_rotation(prev, bf)
                 last = cur
                 if rot == 1: # rotate left
@@ -103,11 +149,11 @@ class AVLTree(object):
                 elif rot == 2: # rotate right
                     cur = self.right_rotation(cur)
                 elif rot == 3: # rotate LR
-                    rotation += 1
+                    rebalances += 1
                     cur.left = self.left_rotation(prev)
                     cur = self.right_rotation(cur)
                 else: # rotate RL
-                    rotation += 1
+                    rebalances += 1
                     cur.right = self.right_rotation(prev)
 
                     cur = self.left_rotation(cur)
@@ -125,7 +171,7 @@ class AVLTree(object):
             cur.size = cur.left.size + cur.right.size + 1
             cur.height = max(cur.left.height, cur.right.height) + 1
             cur = cur.parent
-        return rotation
+        return rebalances
 
     # Time complexity: O(logn), simply iterates down the tree to the designated spot as a leaf, this is O(h) but as an AVL tree h=logn
     def bst_insert(self, key, val):
@@ -182,12 +228,12 @@ class AVLTree(object):
     """
     # Time complexity: O(logn), created using algorithm from class which we've confirmed to be this time complexity
     def delete(self, node):
-        rotations = 0
+        rebalances = 0
         last = node
 
         if node == self.root and not node.left.is_real_node() and not node.right.is_real_node():
             self.root = None
-            return rotations
+            return rebalances
 
         cur = self.delete_bst(node) # Given parent of physically deleted node.
             
@@ -203,9 +249,9 @@ class AVLTree(object):
                 cur.height = max(cur.left.height, cur.right.height) + 1
                 cur.size -= 1
                 cur = cur.parent
-
+                rebalances += 1
             else:
-                rotations += 1
+                rebalances += 1
                 
                 if bf == -2:
                     prev = cur.right
@@ -219,11 +265,11 @@ class AVLTree(object):
                 elif rot == 2: # rotate right
                     cur = self.right_rotation(cur)
                 elif rot == 3: # rotate LR
-                    rotations += 1
+                    rebalances += 1
                     cur.left = self.left_rotation(prev)
                     cur = self.right_rotation(cur)
                 else: # rotate RL
-                    rotations += 1
+                    rebalances += 1
                     cur.right = self.right_rotation(prev)
                     cur = self.left_rotation(cur)
                 if cur.parent != None:
@@ -239,7 +285,7 @@ class AVLTree(object):
             cur.size = cur.left.size + cur.right.size + 1
             cur.height = max(cur.left.height, cur.right.height) + 1
             cur = cur.parent
-        return rotations
+        return rebalances
                  
     # Time complexity: O(logn), worst case is in use of Succesor-case 3 which costs O(logn), rest of the function is O(1) so total is O(logn) worst case
     def delete_bst(self, node):
@@ -402,19 +448,25 @@ class AVLTree(object):
     """
     # Time complexity: O(n), O(n) for calling avl_to_array and then at worst an additional O(n) if iterating over entire array, aka range is from min node key to max node key.  Total O(n)
     def max_range(self, a, b):
+        if a > b or b > a:
+            return None
+        
         max_lexi = ""
-        max_key = 0
+        max_key = None
         arr = self.avl_to_array()
         i = 0
-        while arr[i][0] < a:
+        while arr[i][0] < a and i < len(arr) - 1:
             i += 1
 
-        while arr[i][0] <= b:
+        while arr[i][0] <= b and i < len(arr) - 1:
             if arr[i][1] > max_lexi:
                 max_lexi = arr[i][1]
                 max_key = arr[i][0]
             i += 1
 
+        if max_key == None:
+            return max_key
+        
         return self.search(max_key)
 
     """searches for a node in the dictionary corresponding to the key
@@ -502,3 +554,58 @@ class AVLTree(object):
     def get_bf(node):
         return node.left.height - node.right.height
 
+def test2():
+    tree = AVLTree()
+    operations = [
+    ('insert', 0, 4), ('insert', 0, 6), ('insert', 0, 5)
+]
+
+    # Perform operations on the AVL tree
+    for operation in operations:
+        action, _, value = operation
+        if action == 'insert':
+            print(tree.insert(value, ""))
+        elif action == 'delete':
+            node = tree.search(value)
+            if node:
+                print(tree.delete(node))
+
+        # Print tree and array representation after each operation
+        print()
+        print(tree)
+        print(tree.avl_to_array())
+        print()
+
+    print(tree.max_range(20, 10))
+
+    
+if __name__ == "__main__":
+    # avltree = AVLTree()
+    # # printree(avltree.root)
+    # avltree.insert(5, "Node 1")
+    # #print(avltree.size())
+    # avltree.insert(7, "Node 2")
+    # #print(avltree.size())
+    # avltree.insert(4, "Node 3")
+    # #print(avltree.size())
+    # avltree.insert(8, "Node 4")
+    # #print(avltree.size())
+    # avltree.insert(10, "Node 5")
+    # #print(avltree.size())
+    # avltree.delete(avltree.search(10))
+    # print(avltree)
+    # avl_array = avltree.avl_to_array()
+    # for node in avl_array:
+    #     print(f"Node: {node}, size: {node.size}, height: {node.height}")
+        #print(avltree.size())
+    # print()
+    # print("avl tree search 8 output:")
+    # node = avltree.search(8)
+
+    # print(avltree.rank(node))
+    # print(f"Root: {avltree.root}, size: {avltree.root.size}")
+    # print(f"Root left: {avltree.root.left} size: {avltree.root.left.size}")
+    # print(f"Root right: {avltree.root.right} size: {avltree.root.right.size}")
+    # print(f"Root right.left: {avltree.root.right.left} size: {avltree.root.right.left.size}")
+    # print(f"Root right.right: {avltree.root.right.right} size: {avltree.root.right.right.size}")
+    test2()
